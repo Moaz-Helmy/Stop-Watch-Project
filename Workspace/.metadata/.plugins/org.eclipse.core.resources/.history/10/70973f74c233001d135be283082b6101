@@ -1,0 +1,242 @@
+/*
+ * main.c
+ *
+ *  Created on: Sep 13, 2022
+ *      Author: MOAZ MOHAMED
+ */
+#include<avr/io.h>
+#include<avr/interrupt.h>
+#include<util/delay.h>
+
+/**********TIMER1 NEEDED NUMBER OF TICKS**********/
+#define TIMER1_NEEDED_TICKS 977
+
+/**********FUNCTIONS PROTOTYPES**********/
+void configure_pins(void);
+void INT0_init(void);
+void INT1_init(void);
+void INT2_init(void);
+void TIMER1_compare_mode_configuration(void);
+void set_7segment_numbers(void);
+
+/**********GLOBAL VARIABLES**********/
+
+/***SECONDS, MINUTES, AND HOURS COUNTERS***/
+unsigned char g_seconds_count=0;
+unsigned char g_minutes_count=0;
+unsigned char g_hours_count=0;
+
+/***Interrupt counters to control the number displayed on each 7-segment***/
+unsigned char g_dis1_counter=0;
+unsigned char g_dis2_counter=0;
+unsigned char g_dis3_counter=0;
+unsigned short g_dis4_counter=0;
+unsigned short g_dis5_counter=0;
+unsigned short g_dis6_counter=0;
+
+/***Numbers to be displayed on each 7-segment***/
+unsigned char g_num1=0;
+unsigned char g_num2=0;
+unsigned char g_num3=0;
+unsigned char g_num4=0;
+unsigned char g_num5=0;
+unsigned char g_num6=0;
+int main(void)
+{
+	configure_pins();
+	sei(); //TURN ON GLOBAL INTERRUPTS
+	INT0_init();
+	INT1_init();
+	INT2_init();
+	TIMER1_compare_mode_configuration();
+	while(1)
+	{
+		void set_7segment_numbers();
+	}
+
+}
+void configure_pins(void)
+{
+	/***7-segment control-pins***/
+	DDRA|=(1<<PA0)|(1<<PA1)|(1<<PA2)|(1<<PA3)|(1<<PA4)|(1<<PA5);
+	PORTA&=~((1<<PA0)|(1<<PA1)|(1<<PA2)|(1<<PA3)|(1<<PA4)|(1<<PA5));
+
+	/***7447 decoder pins***/
+	DDRC|=0x0F; //FIRST 4 PINS IN PORTC
+	PORTC&=0xF0; //INITIALIZE TO 0
+	return;
+}
+void INT0_init(void)
+{
+	/***Turn on INT0***/
+	GICR|=(1<<INT0);
+
+	/***Configure INT0 with falling edge***/
+	MCUCR|=(1<<ISC01);
+	MCUCR&=~(1<<ISC00);
+
+	/***Configure PIN to be input pin and enable internal pull-up***/
+	DDRD&=~(1<<PD2);
+	PORTD|=(1<<PD2);
+
+}
+void INT1_init(void)
+{
+	/***Turn on INT1***/
+	GICR|=(1<<INT1);
+
+	/***Configure INT1 with rising edge***/
+	MCUCR|=(1<<ISC10)|(1<<ISC11);
+
+	/***Configure pin to be input pin***/
+	DDRD&=~(1<<PD3);
+
+}
+void INT2_init(void)
+{
+	/***Turn on INT2***/
+	GICR|=(1<<INT2);
+
+	/***Configure INT2 with falling edge***/
+	MCUCSR&=~(1<<ISC2);
+
+	/***Configure PIN to be input pin and enable internal pull-up***/
+	DDRB&=~(1<<PB2);
+	PORTB|=(1<<PB2);
+
+}
+void TIMER1_compare_mode_configuration(void)
+{
+	/***Set TIMER1 to operate in compare mode with prescaler 1024***/
+	TCCR1A=(1<<FOC1A)|(1<<FOC1B);
+	TCCR1B=(1<<WGM12)|(1<<CS12)|(1<<CS10);
+
+	/***Initialize TIMER1 to start from 0***/
+	TCNT1=0;
+
+	/***Set required compare value***/
+	OCR1A=TIMER1_NEEDED_TICKS;
+
+	/***ENABLE TIMER1 COMPARE-MODE INTERRUPT***/
+	TIMSK|=(1<<OCIE1A);
+}
+void set_7segment_numbers(void)
+{
+	/***Setting the right number for 1st 7-segment every interrupt***/
+	if(g_dis1_counter==1)
+	{
+		g_dis1_counter=0;
+		g_num1++;
+		if(g_num1>9)
+		{
+			g_num1=0;
+		}
+		else
+		{
+			g_num1++;
+		}
+	}
+	else
+	{
+	}
+
+	/***Setting the right number for 2nd 7-segment every 10 interrupts***/
+	if(g_dis2_counter==10)
+	{
+		g_dis2_counter=0;
+		g_num2++;
+		if(g_num2>5)
+		{
+			g_num2=0;
+		}
+		else
+		{
+			g_num2++;
+		}
+	}
+	else
+	{
+	}
+
+	/***Setting the right number for 3rd 7-segment every 60 interrupts***/
+	if(g_dis3_counter==60)
+	{
+		g_dis3_counter=0;
+		g_num3++;
+		if(g_num3>9)
+		{
+			g_num3=0;
+		}
+		else
+		{
+			g_num3++;
+		}
+	}
+	else
+	{
+	}
+
+	/***Setting the right number for 4th 7-segment every 600 interrupts***/
+	if(g_dis4_counter==600)
+	{
+		g_dis4_counter=0;
+		g_num4++;
+		if(g_num4>5)
+		{
+			g_num4=0;
+		}
+		else
+		{
+			g_num4++;
+		}
+	}
+	else
+	{
+	}
+
+	/***Setting the right number for 5th 7-segment every 3600 interrupts***/
+	if(g_dis5_counter==3600)
+	{
+		g_dis5_counter=0;
+		g_num5++;
+		if(g_num5>9)
+		{
+			g_num5=0;
+		}
+		else
+		{
+			g_num5++;
+		}
+	}
+	else
+	{
+	}
+
+	/***Setting the right number for 6th 7-segment every 36000 interrupts***/
+	if(g_dis6_counter==36000)
+	{
+		g_dis6_counter=0;
+		g_num6++;
+		if(g_num6>9)
+		{
+			g_num6=0;
+		}
+		else
+		{
+			g_num6++;
+		}
+	}
+	else
+	{
+	}
+}
+ISR(TIMER1_COMPA_vect)
+{
+	/***Interrupt counters incrementing for each 7-segment***/
+	g_dis1_counter=1;
+	g_dis2_counter++;
+	g_dis3_counter++;
+	g_dis4_counter++;
+	g_dis5_counter++;
+	g_dis6_counter++;
+}
